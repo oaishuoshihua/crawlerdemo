@@ -1,18 +1,15 @@
 import io.appium.java_client.TouchAction;
 import io.appium.java_client.android.AndroidDriver;
 import io.appium.java_client.android.AndroidElement;
+import io.appium.java_client.android.AndroidKeyCode;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.remote.CapabilityType;
-import org.openqa.selenium.remote.DesiredCapabilities;
 import test.model.TicketModel;
 import test.utils.GetDriverInstance;
 
-import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,11 +22,10 @@ import java.util.Map;
  */
 public class SpotListAndDetail {
     private AndroidDriver<WebElement> driver;
-    private String currentActivity;
 
     @Before
     public void setUp() throws Exception {
-       this.driver= GetDriverInstance.getDriverInstance();
+        this.driver = GetDriverInstance.getDriverInstance();
     }
 
     @After
@@ -60,7 +56,6 @@ public class SpotListAndDetail {
         Thread.sleep(5000);
         System.out.println(driver.getPageSource());
     }
-
 
 
     //等待activity
@@ -96,7 +91,7 @@ public class SpotListAndDetail {
 
 
     // 爬取景点列表页
-    private void crawlerProcedure1(List<WebElement> out, int count, int spotCount, TicketModel model) throws InterruptedException {
+    private void crawlerProcedure1(List<WebElement> out, int count, int spotCount, TicketModel model) {
         int range = 384;
         int clickX = 525;
         int clickY = 555;
@@ -116,7 +111,11 @@ public class SpotListAndDetail {
                         spotCount++;
                     } else {
                         driver.swipe(clickX, clickY + range, clickX, clickY, 1500);
-                        Thread.sleep(3000);
+                        try {
+                            Thread.sleep(3000);
+                        } catch (InterruptedException e1) {
+
+                        }
                         out = driver.findElements(By.xpath("//android.webkit.WebView//android.view.View"));
                     }
                     model.setListData(value);
@@ -139,149 +138,151 @@ public class SpotListAndDetail {
 
 
     //从资源列表页返回
-    private void goBackFromResourceList() {
-        boolean flag = true;
-        while (flag) {
-            WebElement goback = null;
-            try {
-                goback = driver.findElementByAccessibilityId("转到上一层级");
-                if (goback.isDisplayed()) {
-                    goback.click();
-                    flag = false;
-                }
-            } catch (WebDriverException e) {
-                System.out.println("返回失败");
-            }
+    private void goBack() {
+        driver.pressKeyCode(AndroidKeyCode.BACK);
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
 
         }
     }
 
-    //从资源详情页返回
-    private void goBackFromResourceDetail() {
-        boolean flag = true;
-        while (flag) {
-            WebElement goback = null;
-            try {
-                goback = driver.findElement(By.id("com.sankuai.meituan:id/button_ll"));
-                if (goback.isDisplayed()) {
-                    goback.click();
-                    flag = false;
-                }
-            } catch (WebDriverException e) {
-                System.out.println("返回失败");
-            }
-        }
-    }
+//    //从资源详情页返回
+//    private void goBackFromResourceDetail() {
+//        boolean flag = true;
+//        while (flag) {
+//            WebElement goback = null;
+//            try {
+//                goback = driver.findElement(By.id("com.sankuai.meituan:id/button_ll"));
+//                if (goback.isDisplayed()) {
+//                    goback.click();
+//                    flag = false;
+//                }
+//            } catch (WebDriverException e) {
+//                System.out.println("返回失败");
+//            }
+//        }
+//    }
 
     //获取景点详情页
-    private boolean getSpotDeatil(AndroidDriver driver) throws InterruptedException {
-        boolean result = true;
-        if(!scroll(3,"门票")){
-            goBackFromResourceList();//返回景点列表
-            return result;
-        }
-        Map<String, String> map = new HashMap<String, String>();
-        Thread.sleep(2000);
-        List<WebElement> types = driver.findElements(By.xpath("//android.widget.LinearLayout[@resource-id='com.sankuai.meituan:id/trip_oversea_scenic_spu']"));
-        if (types != null && types.size() > 0) {
-            if(types.size()>1)
-                handleTicketTypeItem(driver, types.get(0), map,false);
-            else
-                handleTicketTypeItem(driver, types.get(0), map,true);
+    private void getSpotDeatil(AndroidDriver driver) {
+        if (scroll(3, "门票")) {
+            try {
+                Map<String, String> map = new HashMap<String, String>();
+                Thread.sleep(2000);
+                List<WebElement> types = driver.findElements(By.xpath("//android.widget.LinearLayout[@resource-id='com.sankuai.meituan:id/trip_oversea_scenic_spu']"));
+                if (types != null && types.size() > 0) {
+                    if (types.size() > 1)
+                        handleTicketTypeItem(driver, types.get(0), map, true);
+                    else
+                        handleTicketTypeItem(driver, types.get(0), map, false);
 
-        } else {
-            result = false;
+                }
+            } catch (InterruptedException e) {
+                System.out.println("获取景点详情页出错");
+            }
         }
-        return result;
+        goBack();//返回景点列表
     }
 
     //点击门票类型
-    private void handleTicketTypeItem(AndroidDriver driver, WebElement type, Map<String, String> items,boolean flag) throws InterruptedException {
+    private void handleTicketTypeItem(AndroidDriver driver, WebElement type, Map<String, String> items, boolean flag) throws InterruptedException {
         if (type == null) return;
-        if(flag){
+        if (flag) {
             type.click();
         }
         Thread.sleep(1000);
         List<WebElement> priceTypes = driver.findElements(By.xpath("//android.widget.LinearLayout[@resource-id='com.sankuai.meituan:id/trip_oversea_spu_group_sku_content']//android.widget.TextView[@resource-id='com.sankuai.meituan:id/oversea_ticket_title']"));
-        handlePriceTypeItem(driver,priceTypes,items);
+        handlePriceTypeItem(driver, priceTypes, items);
     }
 
     //点击价格类型列表
-    private void handlePriceTypeItem(AndroidDriver driver,List<WebElement> priceTypeList,Map<String,String> map) throws InterruptedException {
+    private void handlePriceTypeItem(AndroidDriver driver, List<WebElement> priceTypeList, Map<String, String> map) throws InterruptedException {
         int range = 269;
-        if (priceTypeList != null) {//如果还有列表
-            for (int i = 0; i <priceTypeList.size() ; i++) {
-                WebElement priceItem=priceTypeList.get(i);
-                if(map.keySet().contains(priceItem.getAttribute("name"))){
+        if (priceTypeList != null && priceTypeList.size() > 0) {//如果还有列表
+            for (int i = 0; i < priceTypeList.size(); i++) {
+                WebElement priceItem = priceTypeList.get(i);
+                if (map.keySet().contains(priceItem.getAttribute("name"))) {
                     continue;
-                }else {
-                    map.put(priceItem.getAttribute("name"),"true");
+                } else {
+                    System.out.println(priceItem.getAttribute("name"));
+                    map.put(priceItem.getAttribute("name"), "true");
                     priceItem.click();
                     Thread.sleep(1000);
-                    goBackFromResourceDetail();
+                    goBack();
+                    Thread.sleep(2000);
                 }
             }
-            driver.swipe(driver.manage().window().getSize().getWidth()/2,driver.manage().window().getSize().getHeight()*3/4,driver.manage().window().getSize().getWidth()/2,driver.manage().window().getSize().getHeight()-priceTypeList.size()>1?(priceTypeList.size()-1)*range:range,2000);
-        } else {//需要判断是否有展示全部价格、有下一条票种、展开全部票种
-                WebElement showAllPrice=null;
-                for (int i = 0; i <3 ; i++) {
-                    try{
-                        showAllPrice = driver.findElement(By.xpath("//android.widget.LinearLayout[@resource-id='com.sankuai.meituan:id/trip_oversea_spu_sku_more']//android.widget.TextView[@resource-id='com.sankuai.meituan:id/trip_oversea_spu_more_text']"));
-                        if(showAllPrice!=null){
+            driver.swipe(driver.manage().window().getSize().getWidth()/2,driver.manage().window().getSize().getHeight()/2+range,driver.manage().window().getSize().getWidth()/2,driver.manage().window().getSize().getHeight()/2,1800);
+//            new TouchAction(driver).press(driver.manage().window().getSize().getWidth() / 2, driver.manage().window().getSize().getHeight() * 3 / 4).waitAction(600).moveTo(driver.manage().window().getSize().getWidth() / 2, range).release().perform();
+            Thread.sleep(2000);
+            List<WebElement> priceTypeItems = driver.findElements(By.xpath("//android.widget.LinearLayout[@resource-id='com.sankuai.meituan:id/trip_oversea_spu_group_sku_content']//android.widget.TextView[@resource-id='com.sankuai.meituan:id/oversea_ticket_title']"));
+            handlePriceTypeItem(driver, priceTypeItems, map);
+        } else {
+            judgeHowToDeal(driver, map);
+        }
+    }
+
+    private void judgeHowToDeal(AndroidDriver driver, Map<String, String> map) throws InterruptedException {
+        //需要判断是否有展示全部价格、有下一条票种、展开全部票种
+        WebElement showAllPrice = null;
+        for (int i = 0; i < 3; i++) {
+            try {
+                showAllPrice = driver.findElement(By.xpath("//android.widget.LinearLayout[@resource-id='com.sankuai.meituan:id/trip_oversea_spu_sku_more']//android.widget.TextView[@resource-id='com.sankuai.meituan:id/trip_oversea_spu_more_text']"));
+                if (showAllPrice != null) {
+                    break;
+                }
+            } catch (Exception e) {
+                System.out.println("没有查看全部报价");
+            }
+        }
+        if (showAllPrice != null&&"查看全部报价".equals(showAllPrice.getAttribute("name"))) {
+            showAllPrice.click();
+            Thread.sleep(2000);
+            List<WebElement> priceTypes = driver.findElements(By.xpath("//android.widget.LinearLayout[@resource-id='com.sankuai.meituan:id/trip_oversea_spu_group_sku_content']//android.widget.TextView[@resource-id='com.sankuai.meituan:id/oversea_ticket_title']"));
+            handlePriceTypeItem(driver, priceTypes, map);
+        } else {
+            List<WebElement> types = driver.findElements(By.xpath("//android.widget.LinearLayout[@resource-id='com.sankuai.meituan:id/trip_oversea_scenic_spu']"));
+            if (types != null && types.size() > 0) {
+                handleTicketTypeItem(driver, types.get(0), map, true);
+            } else {
+                for (int i = 0; i < 3; i++) {
+                    try {
+                        WebElement allShow = driver.findElement(By.xpath("//android.widget.TextView[@resource-id='com.sankuai.meituan:id/trip_oversea_show_all_text']"));
+                        if (allShow != null&&"展开全部票种".equals(allShow.getAttribute("name"))) {
+                            allShow.click();
+                            swipeUp(driver, 2000);
+                            List<WebElement> ticketTypes = driver.findElements(By.xpath("//android.widget.LinearLayout[@resource-id='com.sankuai.meituan:id/trip_oversea_scenic_spu']"));
+                            if (ticketTypes != null && ticketTypes.size() > 0) {
+                                handleTicketTypeItem(driver, ticketTypes.get(0), map, true);
+                            }
                             break;
                         }
-                    }catch (Exception e){
-                        System.out.println("没有查看全部报价");
+                    } catch (Exception e) {
+                        System.out.println("没有展开全部票种");
                     }
                 }
-                if(showAllPrice!=null){
-                    showAllPrice.click();
-                    Thread.sleep(2000);
-                    List<WebElement> priceTypes = driver.findElements(By.xpath("//android.widget.LinearLayout[@resource-id='com.sankuai.meituan:id/trip_oversea_spu_group_sku_content']//android.widget.TextView[@resource-id='com.sankuai.meituan:id/oversea_ticket_title']"));
-                    handlePriceTypeItem(driver, priceTypes,map);
-                }else {
-                    List<WebElement> types = driver.findElements(By.xpath("//android.widget.LinearLayout[@resource-id='com.sankuai.meituan:id/trip_oversea_scenic_spu']"));
-                    if (types != null && types.size() > 0) {
-                        handleTicketTypeItem(driver, types.get(0), map,true);
-                    }else {
-                        for (int i = 0; i < 3; i++) {
-                            try{
-                                WebElement allShow = driver.findElement(By.xpath("//android.widget.TextView[@resource-id='com.sankuai.meituan:id/trip_oversea_show_all_text']"));
-                                if(allShow!=null){
-                                    allShow.click();
-                                    swipeUp(driver,2000);
-                                    List<WebElement> ticketTypes = driver.findElements(By.xpath("//android.widget.LinearLayout[@resource-id='com.sankuai.meituan:id/trip_oversea_scenic_spu']"));
-                                    if (ticketTypes != null && ticketTypes.size() > 0) {
-                                        handleTicketTypeItem(driver, ticketTypes.get(0), map,true);
-                                    }
-                                    break;
-                                }
-                            }catch (Exception e){
-                                System.out.println("没有展开全部票种");
-                            }
-                        }
 
-                    }
-                }
+            }
         }
     }
 
     //滚动几次查找某一名称
-    private boolean scroll(int num,String elementName){
-        boolean flag=false;
+    private boolean scroll(int num, String elementName) {
+        boolean flag = false;
         int k = num;
         while (k > 0) {
             WebElement element = null;
             try {
                 Thread.sleep(3000);
                 element = driver.findElement(By.name(elementName));
-                if(element!=null){
-                    driver.swipe(element.getLocation().getX(), element.getLocation().getY(), element.getLocation().getX(), driver.manage().window().getSize().getHeight()/4, 1500);
-                    flag=true;
+                if (element != null) {
+                    swipeUp(driver, 1000);
+                    flag = true;
                     break;
                 }
             } catch (Exception e) {
-                System.out.println("获取"+elementName+"失败");
+                System.out.println("获取" + elementName + "失败");
             }
             swipeUp(driver, 1000);
             k--;
@@ -291,41 +292,44 @@ public class SpotListAndDetail {
 
     private void intoSpotList(AndroidDriver driver) throws InterruptedException {
         Thread.sleep(3000);
-        boolean flag=true;
-        while (flag){
+        boolean flag = true;
+        while (flag) {
             try {
-                WebElement  address = driver.findElementByName("北京");
-                if(address!=null){
+                Thread.sleep(3000);
+                WebElement address = driver.findElementByName("北京");
+                if (address != null) {
                     address.click();
-                    flag=false;
+                    flag = false;
                 }
             } catch (Exception e) {
                 System.out.println("can't get address");
             }
         }
-        Thread.sleep(2000);
-       flag=true;
-        while(flag){
+
+        flag = true;
+        while (flag) {
             try {
-                WebElement  all = driver.findElementByName("旅游出行");
-                if(all!=null){
+                Thread.sleep(2000);
+                WebElement all = driver.findElementByName("旅游出行");
+                if (all != null) {
                     all.click();
-                    flag=false;
+                    flag = false;
                 }
             } catch (Exception e) {
                 System.out.println("can't get all classify");
             }
         }
-        Thread.sleep(5000);
-        flag=true;
-        while(flag){
+
+        flag = true;
+        while (flag) {
             try {
+                Thread.sleep(3000);
                 List<WebElement> element = driver.findElements(By.xpath("//android.view.View[contains(@content-desc,'出境游')]"));
-                if(element.size()>0){
-                    WebElement jz=element.get(0);
-                    if(jz.isDisplayed()){
+                if (element.size() > 0) {
+                    WebElement jz = element.get(0);
+                    if (jz.isDisplayed()) {
                         jz.click();
-                        flag=false;
+                        flag = false;
                         System.out.println("点击出境游");
                     }
                 }
@@ -333,15 +337,14 @@ public class SpotListAndDetail {
                 System.out.println("can't get outplay");
             }
         }
-        Thread.sleep(5000);
-        flag=true;
-        while(flag){
+        flag = true;
+        while (flag) {
             try {
-                Thread.sleep(1000);
+                Thread.sleep(2000);
                 WebElement element = driver.findElementByName("景点门票");
-                if(element!=null){
+                if (element != null) {
                     element.click();
-                    flag=false;
+                    flag = false;
                 }
             } catch (Exception e) {
                 System.out.println("can't get spotTicket");
