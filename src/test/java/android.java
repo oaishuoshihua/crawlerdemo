@@ -5,4 +5,6 @@
  * @copyright ctrip
  */
 public class android {
+    private String test="test";
+
 }
