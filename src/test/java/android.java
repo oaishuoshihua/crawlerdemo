@@ -6,5 +6,6 @@
  */
 public class android {
     private String test="test";
+    private String test2="new version 2.0";
 
 }
